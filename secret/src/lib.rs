@@ -1,17 +1,21 @@
 #![feature(allocator_api)]
+#![feature(once_cell)]
 #![no_std]
 
 pub mod module;
 pub mod sql;
 use utils::*;
+use core::lazy::OnceCell;
 
 extern crate alloc;
 
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
+
 extern "C" {
     pub fn _print(p: *const u8, size: usize);
     pub fn _run(p: *const u8, size: usize);
+    pub fn _notify(p: *const u8, size: usize);
 }
 
 

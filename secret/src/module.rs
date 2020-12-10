@@ -2,6 +2,12 @@ use serde::export::Vec;
 use serde::{Serialize, Deserialize};
 use alloc::boxed::Box;
 use alloc::alloc::Global;
+use crate::println;
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Config{
+    pub db:Box<str>,
+}
 
 /// 请求体
 /// 根据方法来确定调用不同的子函数
@@ -34,15 +40,15 @@ pub struct ResponseBody{
 }
 
 /// 密钥体
-///     account:str：账户
+///     keypair:str：账户
 ///     cert:str：证书
 ///     last_tx_time:u32：最后交易时间戳
 ///     uid:str：uid
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SecretBody{
-    pub account:Box<str>,
+    pub keypair:Box<str>,
     pub cert:Box<str>,
-    pub last_tx_time:u32,
+    pub secret_type:u32,
     pub uid:Box<str>,
 }
 
@@ -104,10 +110,9 @@ pub trait Exec {
 
 impl Exec for GenAndRegisterParam{
     fn run(self) -> Box<str>{
-        Box::from("gen_and_register run");
+        Box::from("gen_and_register run")
 
-        //先查库看看uid能不能查出对应的数据
-        // crate::exec_sql()
+
     }
 }
 
@@ -119,7 +124,14 @@ impl Exec for GetSecretListParam{
 
 impl Exec for GetSecretParam{
     fn run(self) -> Box<str, Global> {
-
+        //先查库看看uid能不能查出对应的数据
+        let find_by_uid = alloc::format!( "{}\"{}\"",super::sql::SELECT_SECRET_BY_UID,self.uid);
+        println(find_by_uid.as_str());
+        crate::exec_sql(find_by_uid.as_str());
+        //等待结果？怎么取数据？
+        //等待js发一个notify给我，我在notifyBody里边来继续处理
+        //无需关注js返回的结果，如果查到就返回数据给调用者，没查到就返回错误
         Box::from("get_secret run")
+
     }
 }
