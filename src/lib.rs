@@ -5,7 +5,6 @@
 #![feature(associated_type_defaults)]
 
 
-mod module;
 
 extern crate alloc;
 
@@ -14,10 +13,12 @@ use core::{mem, slice};
 use core::alloc::Layout;
 use core::str;
 use utils::*;
+use common::*;
 use serde::export::Vec;
 use alloc::boxed::Box;
 use serde_json::Value;
 use core::ops::Deref;
+use secret::module::Exec;
 
 extern crate utils;
 extern crate secret;
@@ -51,13 +52,18 @@ pub fn notify_to_js(s:&str){
 
 #[no_mangle]
 pub extern "C" fn __main(p:*const u8, size: usize){
-    let u8_slice = unsafe {slice::from_raw_parts(p,size)};
-    let str = str::from_utf8(u8_slice).expect("vec<u8> to str err!");
-    let rb: secret::module::RequestBody = serde_json::from_str(str).expect("");
-    let result = rb.run();
-    println(&result);
-    notify_to_js(&result);
+    let str = u8_pointer_and_size_to_str(p, size);
+    let cb:common::module::CommonBody = serde_json::from_str(str).unwrap();
 
+    match cb.method.deref() {
+        "gen_and_register"=>{
+            let garp:secret::module::GenAndRegisterParam = serde_json::from_str(cb.param.deref()).unwrap();
+            garp.run();
+        },
+        "get_secret_list"=>{},
+        "get_secret"=>{}
+        _=>(),
+    }
 }
 
 /// 生成一个C方法，并且要求编译器不修改这个方法
@@ -87,6 +93,22 @@ pub extern "C" fn __wbindgen_malloc(size: usize) -> *mut u8 {
 /// js通知方法
 #[no_mangle]
 pub extern "C" fn __notify(p:*const u8, size: usize){
-    let u8_slice = unsafe {slice::from_raw_parts(p,size)};
+    let str = u8_pointer_and_size_to_str(p, size);
+
+    let nb:common::module::NotifyBody = serde_json::from_str(str).unwrap();
+
+    //错误处理，其实我这不用错误处理，js那出错就直接返回
+    if nb.code != 0 { }
+
+    match nb.method.deref() {
+        "notify_gen_and_register" => {
+            let rr:secret::module::RegisterResp = serde_json::from_str(nb.param.deref()).unwrap();
+            rr.run();
+        },
+        "notify_get_secret" => {
+            let sb:secret::module::SecretBody = serde_json::from_str(nb.param.deref()).unwrap();
+        },
+        _ => {},
+    }
 
 }

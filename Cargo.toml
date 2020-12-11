@@ -13,6 +13,7 @@ serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 
 utils = {path = "utils"}
 secret = {path = "secret"}
+common = {path = "common"}
 
 [lib]
 crate-type = ["cdylib"]
@@ -25,6 +26,7 @@ opt-level = 's'
 [workspace]
 members = [
     "secret",
-    "utils"
+    "utils",
+    "common"
 ]
 
