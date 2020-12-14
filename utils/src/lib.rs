@@ -5,9 +5,7 @@
 #![feature(associated_type_defaults)]
 
 extern crate alloc;
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-use core::{mem, slice};
+use core::{slice};
 use alloc::vec::Vec;
 use core::str;
 

@@ -4,51 +4,19 @@
 #![feature(default_alloc_error_handler)]
 #![feature(associated_type_defaults)]
 
-
-
 extern crate alloc;
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-
-use core::{mem, slice};
+use core::{mem};
 use core::alloc::Layout;
-use core::str;
 use utils::*;
-use common::*;
-use serde::export::Vec;
-use alloc::boxed::Box;
-use serde_json::Value;
 use core::ops::Deref;
 use secret::module::Exec;
 
 extern crate utils;
 extern crate secret;
 
-
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-/// js提供的方法
-extern "C" {
-    fn _print(p: *const u8, size: usize);
-    fn _notify(p: *const u8, size: usize);
-    fn _run(p: *const u8, size: usize);
-}
-
-
-/// 在js环境中打印信息
-pub fn println(s: &str){
-    let pair = str_to_pointer_and_size(s);
-    unsafe {
-        _print(pair.0, pair.1);
-    }
-}
-
-pub fn notify_to_js(s:&str){
-    let pair = str_to_pointer_and_size(s);
-    unsafe {
-        _notify(pair.0,pair.1);
-    }
-}
 
 #[no_mangle]
 pub extern "C" fn __main(p:*const u8, size: usize){
