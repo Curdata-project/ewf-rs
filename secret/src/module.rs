@@ -38,20 +38,9 @@ pub struct GenAndRegisterParam{
     pub info: RegisterUserInfo,
 }
 
-/// 获取密钥列表
-///     page_items:u32：条目
-///     page_num:u32：页数
 #[derive(Serialize, Deserialize, Clone)]
-pub struct GetSecretListParam{
-    pub page_items:u32,
-    pub page_num:u32,
-}
-
-/// 获取密钥
-///     uid:string：用户uid
-#[derive(Serialize, Deserialize, Clone)]
-pub struct GetSecretParam{
-    pub uid:Box<str>
+pub struct SecretBodyList{
+    pub list:Vec<SecretBody>
 }
 
 /// 服务器注册类
@@ -59,14 +48,20 @@ pub struct GetSecretParam{
 pub struct RegisterParam{
     pub cert: Box<str>,
     pub info: RegisterUserInfo,
-    pub hold:Box<str>,
+    pub hold:RegisterParamHold,
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct RegisterParamHold{
+    pub seed:Box<str>
+}
+
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct RegisterResp{
     pub cert:Box<str>,
     pub uid:Box<str>,
-    pub hold:Box<str>,
+    pub hold:RegisterParamHold,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -107,6 +102,34 @@ pub trait Exec {
     fn run(self);
 }
 
+impl Exec for SecretBodyList{
+    fn run(self) {
+        let mut sb_vec:Vec<SecretBody> = Vec::new();
+
+
+        for sb in self.list {
+            let new_sb = deserialize_secret(sb.seed.deref(),
+                                        sb.uid.deref(),
+                                        sb.secret_type.deref(),
+                                        sb.cert.deref()).unwrap();
+            sb_vec.push(new_sb);
+        }
+
+        let sb_list = SecretBodyList{
+            list: sb_vec
+        };
+
+        let notify_body = super::common_module::NotifyBody{
+            method: Box::from("notify_get_secret_list"),
+            code: 0,
+            msg: Box::from("success"),
+            param: Box::from(serde_json::to_string(&sb_list).unwrap())
+        };
+
+        super::notify(&serde_json::to_string(&notify_body).unwrap());
+    }
+}
+
 impl Exec for GenAndRegisterParam{
     fn run(self){
 
@@ -117,9 +140,10 @@ impl Exec for GenAndRegisterParam{
         let u8_vec_seed = keypair.0.get_code();
 
         let seed = hex::encode(u8_vec_seed);
-        let mut json = serde_json::json!({
-            "seed":seed.as_str(),
-        });
+
+        let hold = RegisterParamHold{
+            seed: Box::from(seed.as_str())
+        };
 
         let unregister_cert = keypair.get_certificate();
         let byte = unregister_cert.to_bytes();
@@ -127,7 +151,7 @@ impl Exec for GenAndRegisterParam{
         let rp = RegisterParam{
             cert: Box::from(cert.as_str()),
             info: self.info,
-            hold:Box::from(serde_json::to_string(&json).unwrap())
+            hold
         };
 
         let cb = super::common_module::CommonBody{
@@ -137,20 +161,6 @@ impl Exec for GenAndRegisterParam{
         //调用js注册方法
         super::request(serde_json::to_string(&cb).unwrap().as_str());
 
-    }
-}
-
-impl Exec for GetSecretListParam{
-    fn run(self){
-    }
-}
-
-impl Exec for GetSecretParam{
-    fn run(self){
-        //先查库看看uid能不能查出对应的数据
-        let find_by_uid = alloc::format!( "{}\"{}\"",super::sql::SELECT_SECRET_BY_UID,self.uid);
-        println(find_by_uid.as_str());
-        crate::exec_sql(find_by_uid.as_str());
     }
 }
 

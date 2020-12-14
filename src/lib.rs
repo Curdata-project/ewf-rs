@@ -60,8 +60,14 @@ pub extern "C" fn __main(p:*const u8, size: usize){
             let garp:secret::module::GenAndRegisterParam = serde_json::from_str(cb.param.deref()).unwrap();
             garp.run();
         },
-        "get_secret_list"=>{},
-        "get_secret"=>{}
+        "get_secret_list"=>{
+            let sb_list:secret::module::SecretBodyList = serde_json::from_str(cb.param.deref()).unwrap();
+            sb_list.run();
+        },
+        "get_secret"=>{
+            let sb:secret::module::SecretBody = serde_json::from_str(cb.param.deref()).unwrap();
+            sb.run();
+        }
         _=>(),
     }
 }
@@ -107,6 +113,7 @@ pub extern "C" fn __notify(p:*const u8, size: usize){
         },
         "notify_get_secret" => {
             let sb:secret::module::SecretBody = serde_json::from_str(nb.param.deref()).unwrap();
+            sb.run();
         },
         _ => {},
     }
